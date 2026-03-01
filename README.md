@@ -1,155 +1,133 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Web</title>
+<script>
+// Default owner account ALWAYS loads
+let defaultUsers = [
+    { username: "j9vr", password: "dxrp", isMember: true, isOwner: true }
+];
 
-    <style>
-        /* RESET */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            scroll-behavior: smooth;
-        }
+// Load users OR apply defaults if none
+let users = JSON.parse(localStorage.getItem("hiveUsers"));
+if (!users || users.length === 0) {
+    users = defaultUsers;
+    localStorage.setItem("hiveUsers", JSON.stringify(users));
+}
 
-        body {
-            font-family: Arial, sans-serif;
-            background: #0d0d0d;
-            color: #e6e6e6;
-        }
+let currentUser = null;
+let isOwner = false;
 
-        /* HEADER */
-        header {
-            background: #111;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 0 15px #00ffee;
-        }
+// Toggle login/register
+let isRegister = false;
+function toggleAuth() {
+    isRegister = !isRegister;
+    document.getElementById("authTitle").textContent = isRegister ? "Create Account" : "The Hive System Login";
+    document.getElementById("authBtn").textContent = isRegister ? "Register" : "Login";
+}
 
-        header h1 {
-            color: #00ffee;
-            text-shadow: 0 0 12px #00ffee;
-            font-size: 42px;
-        }
+// Login or Register
+function authenticate() {
+    const username = document.getElementById("authUsername").value.trim();
+    const password = document.getElementById("authPassword").value.trim();
 
-        /* NAVIGATION */
-        nav {
-            background: #141414;
-            padding: 15px 0;
-            text-align: center;
-        }
+    if (!username || !password) return alert("Enter username and password");
 
-        nav a {
-            color: #00ffee;
-            font-weight: bold;
-            text-decoration: none;
-            margin: 0 15px;
-            padding: 8px 15px;
-            border-radius: 6px;
-            transition: 0.3s;
-        }
+    // Register flow
+    if (isRegister) {
+        if (users.some(u => u.username === username)) return alert("Username already exists");
 
-        nav a:hover {
-            background: #00ffee;
-            color: #000;
-            box-shadow: 0 0 10px #00ffee;
-        }
+        users.push({ username, password, isMember: false, isOwner: false });
+        localStorage.setItem("hiveUsers", JSON.stringify(users));
+        alert("Account created. You can now log in.");
+        toggleAuth();
+        return;
+    }
 
-        /* SECTIONS */
-        section {
-            padding: 60px 20px;
-            text-align: center;
-        }
+    // Login flow
+    let user = users.find(u => u.username === username && u.password === password);
+    if (!user) return alert("Wrong username or password");
 
-        h2 {
-            font-size: 32px;
-            margin-bottom: 15px;
-            color: #00ffee;
-            text-shadow: 0 0 10px #00ffee;
-        }
+    currentUser = user;
+    isOwner = user.isOwner;
 
-        p {
-            font-size: 18px;
-            max-width: 700px;
-            margin: 0 auto;
-            color: #ccc;
-        }
+    document.getElementById("ownerPanelBtn").style.display = isOwner ? "block" : "none";
 
-        /* BUTTON */
-        .btn {
-            display: inline-block;
-            margin-top: 25px;
-            padding: 12px 25px;
-            background: #00ffee;
-            color: #000;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
-            box-shadow: 0 0 10px #00ffee;
-            transition: 0.3s;
-        }
+    document.getElementById("authScreen").style.display = "none";
+    document.getElementById("hiveSystem").style.display = "block";
 
-        .btn:hover {
-            background: #00c4b8;
-            transform: scale(1.06);
-            box-shadow: 0 0 20px #00ffee;
-        }
+    refreshMembers();
+}
 
-        /* FOOTER */
-        footer {
-            background: #111;
-            text-align: center;
-            padding: 20px;
-            color: #777;
-            margin-top: 30px;
-            font-size: 14px;
-        }
-    </style>
-</head>
+// Logout
+function logout() {
+    currentUser = null;
+    isOwner = false;
+    document.getElementById("hiveSystem").style.display = "none";
+    document.getElementById("authScreen").style.display = "flex";
+}
 
-<body>
+// Toggle Owner Panel
+function toggleOwnerPanel() {
+    const panel = document.getElementById("ownerPanel");
+    panel.style.display = panel.style.display === "block" ? "none" : "block";
+}
 
-    <!-- HEADER -->
-    <header>
-        <h1>Welcome to Test Web</h1>
-        <p>A simple website hosted on GitHub Pages</p>
-    </header>
+// Refresh members list
+function refreshMembers() {
+    const display = document.getElementById("membersListDisplay");
+    display.innerHTML = "";
 
-    <!-- NAVIGATION -->
-    <nav>
-        <a href="#home">Home</a>
-        <a href="#about">About</a>
-        <a href="#contact">Contact</a>
-    </nav>
+    users.filter(u => u.isMember).forEach(u => {
+        const div = document.createElement("div");
+        div.className = "member";
+        div.textContent = `${u.username}${u.isOwner ? " (Owner)" : ""}`;
+        display.appendChild(div);
+    });
 
-    <!-- HOME SECTION -->
-    <section id="home">
-        <h2>Home</h2>
-        <p>This is a clean, modern website created using HTML and hosted for free on GitHub Pages.</p>
-        <a class="btn" href="#about">Learn More</a>
-    </section>
+    if (!isOwner) return;
 
-    <!-- ABOUT SECTION -->
-    <section id="about">
-        <h2>About</h2>
-        <p>You can fully customize this website.  
-           Change colors, add pages, insert images, or build anything you want.</p>
-        <p>GitHub Pages makes publishing websites super easy — just update your code and push.</p>
-    </section>
+    const ownerList = document.getElementById("membersList");
+    ownerList.innerHTML = "";
 
-    <!-- CONTACT SECTION -->
-    <section id="contact">
-        <h2>Contact</h2>
-        <p>If you want more pages or advanced features, I can generate more code for you.</p>
-        <a class="btn" href="#home">Back to Top</a>
-    </section>
+    users.forEach((u, i) => {
+        const div = document.createElement("div");
+        div.className = "member";
+        div.innerHTML = `
+            ${u.username} ${u.isOwner ? "(Owner)" : "(Member)"}
+            <div class="memberControl">
+                <button class="delete" onclick="removeMember(${i})">Remove</button>
+            </div>`;
+        ownerList.appendChild(div);
+    });
 
-    <!-- FOOTER -->
-    <footer>
-        © 2026 • Test Web • GitHub Pages
-    </footer>
+    localStorage.setItem("hiveUsers", JSON.stringify(users));
+}
 
-</body>
-</html>
+// Grant member
+function grantMember() {
+    const name = document.getElementById("grantUsername").value.trim();
+    const u = users.find(x => x.username === name);
+    if (!u) return alert("User not found");
+
+    u.isMember = true;
+    localStorage.setItem("hiveUsers", JSON.stringify(users));
+    refreshMembers();
+}
+
+// Grant owner
+function grantOwner() {
+    const name = document.getElementById("grantUsername").value.trim();
+    const u = users.find(x => x.username === name);
+    if (!u) return alert("User not found");
+
+    u.isOwner = true;
+    localStorage.setItem("hiveUsers", JSON.stringify(users));
+    refreshMembers();
+}
+
+// Remove member
+function removeMember(i) {
+    if (!confirm("Remove this user?")) return;
+    users[i].isMember = false;
+    users[i].isOwner = false;
+    localStorage.setItem("hiveUsers", JSON.stringify(users));
+    refreshMembers();
+}
+</script>
