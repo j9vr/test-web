@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Share Links</title>
+    <style>
+        body { font-family: Arial; background: #111; color: #fff; margin: 0; padding: 20px; }
+        h1 { text-align: center; }
+        #box { max-width: 500px; margin: auto; }
+        input, button { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; }
+        input { background: #222; color: white; }
+        button { background: #4CAF50; color: white; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .linkItem {
+            padding: 10px;
+            background: #222;
+            border-radius: 6px;
+            margin-top: 10px;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🔗 Share Your Links</h1>
+
+<div id="box">
+    <input type="text" id="linkInput" placeholder="Paste a link...">
+    <button onclick="addLink()">Share Link</button>
+
+    <h2>Shared Links</h2>
+    <div id="links"></div>
+</div>
+
+<script>
+const username = "YOUR_GITHUB_USERNAME";
+const repo = "YOUR_REPO_NAME";
+const token = "YOUR_PERSONAL_ACCESS_TOKEN";
+const filePath = "links.json";
+
+async function getLinks() {
+    const url = `https://api.github.com/repos/${username}/${repo}/contents/${filePath}`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return JSON.parse(atob(data.content));
+}
+
+async function updateLinks(newLinks) {
+    const url = `https://api.github.com/repos/${username}/${repo}/contents/${filePath}`;
+    const get = await fetch(url);
+    const file = await get.json();
+
+    await fetch(url, {
+        method: "PUT",
+        headers: {
+            "Authorization": "token " + token,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            message: "Update links",
+            content: btoa(JSON.stringify(newLinks, null, 2)),
+            sha: file.sha
+        })
+    });
+}
+
+async function addLink() {
+    const link = document.getElementById("linkInput").value.trim();
+    if (!link) return alert("Enter a link!");
+
+    let links = await getLinks();
+    links.push({ url: link, added: new Date().toISOString() });
+
+    await updateLinks(links);
+    renderLinks();
+    document.getElementById("linkInput").value = "";
+}
+
+async function renderLinks() {
+    const list = document.getElementById("links");
+    list.innerHTML = "Loading...";
+
+    const links = await getLinks();
+    list.innerHTML = "";
+
+    links.forEach(l => {
+        const div = document.createElement("div");
+        div.className = "linkItem";
+        div.innerHTML = `<a href="${l.url}" target="_blank">${l.url}</a>`;
+        list.appendChild(div);
+    });
+}
+
+renderLinks();
+</script>
+
+</body>
+</html>
